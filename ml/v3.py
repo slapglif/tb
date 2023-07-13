@@ -43,7 +43,11 @@ class FileProcessor:
                 os.path.join(root, file)
                 for root, _, files in os.walk(self.path)
                 for file in files
-                if file.endswith(".py")
+                if file.split(".")[-1] in [
+                    "py", "java", "js", "ts", 'tsx', "c", "cpp", "h", "cs", "go", "rs", "php",
+                    "html", 'jsx,', 'json', 'css', 'scss', 'sass', 'less', 'vue', 'swift',
+                    'kt', 'ktm', 'kts', 'ktm', 'ktx', 'kts', 'ktm', 'ktx', 'kts', 'ktm',
+                ]
             ]
 
             if not files:
@@ -55,12 +59,14 @@ class FileProcessor:
                 results = p.map(self.process_file, files)
 
             self.processed_files = [doc for sublist in results for doc in sublist]
+
         logger.info(f"Processed {len(self.processed_files)} files.")
         return self.processed_files
 
     # Function to generate refactor plan and run analysis
     def generate_refactor_plan(self, processed_files: list) -> None:
-        llm = ChatOpenAI(temperature=0.4, model_name="gpt-4-0613")  # LLM setup
+        models = ["gpt-4-0613", "gpt-3.5-turbo-16k"]
+        llm = ChatOpenAI(temperature=0.7, model_name=models[1])  # # LLM setup
         document_prompt = PromptTemplate(
             input_variables=["page_content"],
             template="{page_content}"
@@ -68,7 +74,8 @@ class FileProcessor:
 
         # Create a documents' chain with a prompt to summarize code structure
         stack_chain: StuffDocumentsChain = self.generate_plan(
-            "given the context {context} - summarize all functions, classes, methods, data structure ...",
+            "given the context {context} - summarize all functions, classes, methods. give an ideal tree view of the best structure for this application and be as detailed as possible about the code use and flow - each response should be at least a paragraph if possible."
+            ,
             llm,
             document_prompt,
             'context'
@@ -86,7 +93,7 @@ class FileProcessor:
     def generate_plan(
         self, template: str, llm: ChatOpenAI,
         document_prompt: PromptTemplate, document_key: Optional[str] = None
-        ) -> StuffDocumentsChain:
+    ) -> StuffDocumentsChain:
         prompt_combine = PromptTemplate(
             input_variables=document_key and [document_key] or [],
             template=template
@@ -102,7 +109,7 @@ class FileProcessor:
     # Function to run analysis on documents' chain & interact with user
     def run_analysis(self, chain: ReduceDocumentsChain, processed_files: list) -> None:
         analysis_agent = AnalyzeDocumentChain(combine_docs_chain=chain, input_key="page_content")
-        analysis = analysis_agent.run(chain.combine_docs(processed_files, token_max=8000)[0])  # Run the agent & get
+        analysis = analysis_agent.run(chain.combine_docs(processed_files, token_max=16000)[0])  # Run the agent & get
         # analysis result
 
         logger.info(analysis)
@@ -155,11 +162,11 @@ if __name__ == "__main__":
             dict(
                 sink='app.log', level="DEBUG", format="{time} {level} {message}",
                 colorize=True, backtrace=True, diagnose=True
-                ),
+            ),
             dict(
                 sink=sys.stdout, level="INFO", format="{time} {level} {message}",
                 colorize=True, backtrace=True, diagnose=True
-                ),
+            ),
         ],
     )
 

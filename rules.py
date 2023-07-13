@@ -290,6 +290,10 @@ class Position:
 
 
 class Rule(BaseModel):
+    def __init__(__pydantic_self__, **data: Any):
+        super().__init__(data)
+        __pydantic_self__.actions = None
+
     """
     The Rule class is used to represent a rule in the rule engine.
     """
@@ -529,6 +533,14 @@ def place_buy_order(api, param, qty):
         symbol=param, qty=qty, side="buy", type="market", time_in_force="gtc"
     )
 
+def calculate_stop_loss(param):
+    pass
+
+def calculate_take_profit(param):
+    pass
+
+def place_sell_order(api, param, qty):
+    pass
 
 def apply_rules(
     entry_rules: List[Rule],

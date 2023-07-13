@@ -38,8 +38,7 @@ def summarize_files_in_directory():
                 file_path = os.path.join(root, file)
                 print(f"Processing file: {file_path}")
                 try:
-                    for json_content in process_file(file_path):
-                        output.append(json_content)
+                    output.extend(iter(process_file(file_path)))
                 except Exception as e:
                     print(f"Failed to process file: {file_path}. Error: {str(e)}")
 
@@ -63,10 +62,7 @@ def get_refactor_plan():
         engine="text-davinci-002", prompt=context, max_tokens=256
     )
 
-    # Extract the refactor plan
-    refactor_plan = response.choices[0].text.strip()
-
-    return refactor_plan
+    return response.choices[0].text.strip()
 
 
 def main():
