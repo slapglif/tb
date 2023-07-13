@@ -9,7 +9,11 @@ from numpy import fmin
 from scipy.constants import hp
 
 import settings
-from models import calculate_sharpe_ratio, calculate_max_drawdown, calculate_sortino_ratio
+from models import (
+    calculate_sharpe_ratio,
+    calculate_max_drawdown,
+    calculate_sortino_ratio,
+)
 from rules import RuleFilter, calculate_quantity, data
 from matplotlib import plt
 from alpaca_trade_api import AsyncRest
@@ -17,7 +21,7 @@ from alpaca_trade_api import AsyncRest
 client = AsyncRest(
     key_id=settings.Config.alpaca_key,
     secret_key=settings.Config.alpaca_secret,
-    data_url=settings.Config.alpaca_base_url
+    data_url=settings.Config.alpaca_base_url,
 )
 
 
@@ -25,11 +29,8 @@ class BacktestingStrategy(bt.Strategy):
     """
     The BacktestingStrategy class is used to backtest a trading strategy.
     """
-    params = (
-        ('entry_rules', []),
-        ('exit_rules', []),
-        ('reverse_rules', [])
-    )
+
+    params = (("entry_rules", []), ("exit_rules", []), ("reverse_rules", []))
 
     def __init__(self):
         """
@@ -208,10 +209,10 @@ class Trade:
         return cls(
             symbol=trade.data._name,
             date=trade.data.datetime.datetime(),
-            direction='buy' if trade.history[0].event == 'buy' else 'sell',
+            direction="buy" if trade.history[0].event == "buy" else "sell",
             entry_price=trade.price,
             exit_price=trade.history[-1].price,
-            qty=trade.size
+            qty=trade.size,
         )
 
     def calculate_profit(self):
@@ -233,24 +234,31 @@ class PerformanceStats:
     The PerformanceStats class is used to represent the performance statistics of a strategy.
     """
 
-    def __init__(self, win_rate: float, avg_profit: float, avg_loss: float,
-                 max_drawdown: float, sharpe_ratio: float, sortino_ratio: float):
+    def __init__(
+        self,
+        win_rate: float,
+        avg_profit: float,
+        avg_loss: float,
+        max_drawdown: float,
+        sharpe_ratio: float,
+        sortino_ratio: float,
+    ):
         """
-    The __init__ function is called when the class is instantiated.
-    It sets up the object with all of its initial values.
+        The __init__ function is called when the class is instantiated.
+        It sets up the object with all of its initial values.
 
-    Args:
-        self: Represent the instance of the object itself
-        win_rate: float: Define the win rate of a strategy
-        avg_profit: float: Set the average profit of a strategy
-        avg_loss: float: Set the average loss of the strategy
-        max_drawdown: float: Calculate the maximum drawdown of a strategy
-        sharpe_ratio: float: Define the type of variable that is passed into the function
-        sortino_ratio: float: Set the sortino_ratio attribute of the class
+        Args:
+            self: Represent the instance of the object itself
+            win_rate: float: Define the win rate of a strategy
+            avg_profit: float: Set the average profit of a strategy
+            avg_loss: float: Set the average loss of the strategy
+            max_drawdown: float: Calculate the maximum drawdown of a strategy
+            sharpe_ratio: float: Define the type of variable that is passed into the function
+            sortino_ratio: float: Set the sortino_ratio attribute of the class
 
-    Returns:
-        An instance of the class
-    """
+        Returns:
+            An instance of the class
+        """
         self.win_rate = win_rate
         self.avg_profit = avg_profit
         self.avg_loss = avg_loss
@@ -272,12 +280,26 @@ class PerformanceStats:
             A bar graph of the performance statistics
 
         """
-        labels = ['Win rate', 'Avg. profit', 'Avg. loss', 'Max drawdown', 'Sharpe ratio', 'Sortino ratio']
-        values = [self.win_rate, self.avg_profit, self.avg_loss, self.max_drawdown, self.sharpe_ratio, self.sortino_ratio]
+        labels = [
+            "Win rate",
+            "Avg. profit",
+            "Avg. loss",
+            "Max drawdown",
+            "Sharpe ratio",
+            "Sortino ratio",
+        ]
+        values = [
+            self.win_rate,
+            self.avg_profit,
+            self.avg_loss,
+            self.max_drawdown,
+            self.sharpe_ratio,
+            self.sortino_ratio,
+        ]
         plt.bar(labels, values)
-        plt.title('Performance Statistics')
-        plt.xlabel('Metrics')
-        plt.ylabel('Value')
+        plt.title("Performance Statistics")
+        plt.xlabel("Metrics")
+        plt.ylabel("Value")
         plt.show()
 
 
@@ -320,31 +342,35 @@ def calculate_performance_stats(trades: List[Trade]) -> PerformanceStats:
     sortino_ratio = calculate_sortino_ratio(profits)
     max_drawdown = calculate_max_drawdown(profits)
 
-    return PerformanceStats(win_rate, avg_profit, avg_loss, max_drawdown, sharpe_ratio, sortino_ratio)
+    return PerformanceStats(
+        win_rate, avg_profit, avg_loss, max_drawdown, sharpe_ratio, sortino_ratio
+    )
 
 
 # Define the parameter space to explore using hyperopt
 param_space = dict(
     trading_rules=dict(
-        buy_time=hp.uniform('buy_time', 30, 120, 1),
-        buy_stop_loss_pct=hp.uniform('buy_stop_loss_pct', 0.001, 0.01),
-        buy_take_profit_pct=hp.uniform('buy_take_profit_pct', 0.005, 0.02),
-        buy_take_profit_pct2=hp.uniform('buy_take_profit_pct2', 0.01, 0.05),
-        buy_green_candle_pct=hp.uniform('buy_green_candle_pct', 0.001, 0.005),
-        buy_red_candle_pct=hp.uniform('buy_red_candle_pct', 0.001, 0.005),
-        buy_wick_pct=hp.uniform('buy_wick_pct', 0.001, 0.01),
-        buy_lot_pct=hp.uniform('buy_lot_pct', 0.001, 0.01),
-        buy_ma_period_1=hp.quniform('buy_ma_period_1', 10, 50, 1),
-        buy_ma_period_2=hp.quniform('buy_ma_period_2', 50, 200, 1),
-        buy_ma_range_min_pct=hp.uniform('buy_ma_range_min_pct', 0.001, 0.01),
-        buy_ma_range_max_pct=hp.uniform('buy_ma_range_max_pct', 0.01, 0.05),
-        sell_ma_period_1=hp.quniform('sell_ma_period_1', 10, 50, 1),
-        sell_ma_period_2=hp.quniform('sell_ma_period_2', 50, 100, 1),
-        sell_ma_widening_pct=hp.uniform('sell_ma_widening_pct', 0.003, 0.01),
-        sell_take_profit_pct=hp.uniform('sell_take_profit_pct', 0.003, 0.01),
-        sell_stop_loss_pct=hp.uniform('sell_stop_loss_pct', 0.003, 0.01),
-        stop_trading_red_bars_above_ma_pct=hp.uniform('stop_trading_red_bars_above_ma_pct', 0.005, 0.02),
-        ma_cross_sell_enabled=hp.choice('ma_cross_sell_enabled', [True, False])
+        buy_time=hp.uniform("buy_time", 30, 120, 1),
+        buy_stop_loss_pct=hp.uniform("buy_stop_loss_pct", 0.001, 0.01),
+        buy_take_profit_pct=hp.uniform("buy_take_profit_pct", 0.005, 0.02),
+        buy_take_profit_pct2=hp.uniform("buy_take_profit_pct2", 0.01, 0.05),
+        buy_green_candle_pct=hp.uniform("buy_green_candle_pct", 0.001, 0.005),
+        buy_red_candle_pct=hp.uniform("buy_red_candle_pct", 0.001, 0.005),
+        buy_wick_pct=hp.uniform("buy_wick_pct", 0.001, 0.01),
+        buy_lot_pct=hp.uniform("buy_lot_pct", 0.001, 0.01),
+        buy_ma_period_1=hp.quniform("buy_ma_period_1", 10, 50, 1),
+        buy_ma_period_2=hp.quniform("buy_ma_period_2", 50, 200, 1),
+        buy_ma_range_min_pct=hp.uniform("buy_ma_range_min_pct", 0.001, 0.01),
+        buy_ma_range_max_pct=hp.uniform("buy_ma_range_max_pct", 0.01, 0.05),
+        sell_ma_period_1=hp.quniform("sell_ma_period_1", 10, 50, 1),
+        sell_ma_period_2=hp.quniform("sell_ma_period_2", 50, 100, 1),
+        sell_ma_widening_pct=hp.uniform("sell_ma_widening_pct", 0.003, 0.01),
+        sell_take_profit_pct=hp.uniform("sell_take_profit_pct", 0.003, 0.01),
+        sell_stop_loss_pct=hp.uniform("sell_stop_loss_pct", 0.003, 0.01),
+        stop_trading_red_bars_above_ma_pct=hp.uniform(
+            "stop_trading_red_bars_above_ma_pct", 0.005, 0.02
+        ),
+        ma_cross_sell_enabled=hp.choice("ma_cross_sell_enabled", [True, False]),
     )
 )
 
@@ -369,37 +395,41 @@ def run_backtest_with_params(params: Dict, stock_data_df=None) -> float:
     return result[0].broker.getvalue()
 
 
-best = fmin(fn=run_backtest_with_params, space=param_space, algo=tpe.suggest, max_evals=100)
+best = fmin(
+    fn=run_backtest_with_params, space=param_space, algo=tpe.suggest, max_evals=100
+)
 print(best)
 
 # Run the backtest with the best parameters found by hyperopt
 best_params = {
-    'buy_time': 59,
-    'buy_stop_loss_pct': best['buy_stop_loss_pct'],
-    'buy_take_profit_1_pct': 1,
-    'buy_take_profit_2_pct': 2,
-    'buy_green_candle_limit_pct': best['buy_green_candle_limit_pct'],
-    'buy_red_candle_limit_pct': best['buy_red_candle_limit_pct'],
-    'buy_red_candle_stop_loss_pct': 0.2,
-    'buy_red_candle_take_profit_pct': 1,
-    'buy_wick_size_pct': 0.2,
-    'buy_wick_ma_period': 25,
-    'buy_qty_pct': 0.2,
-    'buy_qty_ma_period': 89,
-    'buy_qty_ma_range_min_pct': 0.3,
-    'buy_qty_ma_range_max_pct': best['buy_qty_ma_range_max_pct'],
-    'sell_ma_period_1': int(best['sell_ma_period_1']),
-    'sell_ma_period_2': int(best['sell_ma_period_2']),
-    'sell_interval_pct': 0.3,
-    'sell_stop_loss_pct': 0.2,
-    'sell_take_profit_pct': 1,
-    'sell_trailing_stop_pct': 0.3,
-    'stop_trading_on_red_bar_above_ma_pct': best['stop_trading_on_red_bar_above_ma_pct'],
-    'stop_trading_on_red_bar_above_ma_period': 50,
-    'stop_trading_on_red_bar_above_ma_range_min_pct': 0.2,
-    'stop_trading_on_red_bar_above_ma_range_max_pct': 0.5,
-    'flip_to_sell_on_sell_ma_cross': True,
-    'flip_to_sell_on_sell_ma_cross_widening_pct': 0.3
+    "buy_time": 59,
+    "buy_stop_loss_pct": best["buy_stop_loss_pct"],
+    "buy_take_profit_1_pct": 1,
+    "buy_take_profit_2_pct": 2,
+    "buy_green_candle_limit_pct": best["buy_green_candle_limit_pct"],
+    "buy_red_candle_limit_pct": best["buy_red_candle_limit_pct"],
+    "buy_red_candle_stop_loss_pct": 0.2,
+    "buy_red_candle_take_profit_pct": 1,
+    "buy_wick_size_pct": 0.2,
+    "buy_wick_ma_period": 25,
+    "buy_qty_pct": 0.2,
+    "buy_qty_ma_period": 89,
+    "buy_qty_ma_range_min_pct": 0.3,
+    "buy_qty_ma_range_max_pct": best["buy_qty_ma_range_max_pct"],
+    "sell_ma_period_1": int(best["sell_ma_period_1"]),
+    "sell_ma_period_2": int(best["sell_ma_period_2"]),
+    "sell_interval_pct": 0.3,
+    "sell_stop_loss_pct": 0.2,
+    "sell_take_profit_pct": 1,
+    "sell_trailing_stop_pct": 0.3,
+    "stop_trading_on_red_bar_above_ma_pct": best[
+        "stop_trading_on_red_bar_above_ma_pct"
+    ],
+    "stop_trading_on_red_bar_above_ma_period": 50,
+    "stop_trading_on_red_bar_above_ma_range_min_pct": 0.2,
+    "stop_trading_on_red_bar_above_ma_range_max_pct": 0.5,
+    "flip_to_sell_on_sell_ma_cross": True,
+    "flip_to_sell_on_sell_ma_cross_widening_pct": 0.3,
 }
 
 
@@ -407,6 +437,7 @@ class Backtest:
     """
     The Backtest class is used to run a backtest on a strategy and plot the results.
     """
+
     def __init__(self, data, strategy, params, commission, cash):
         cerebro = bt.Cerebro()
         cerebro.broker.setcash(cash)
@@ -491,7 +522,6 @@ class Backtest:
         return self.get_return() ** (1 / (self.get_duration_days() / 365.0)) - 1
 
     def get_sharpe_ratio(self):
-
         """
         The get_sharpe_ratio function returns the Sharpe ratio of a strategy.
 
@@ -503,10 +533,16 @@ class Backtest:
 
         """
         win_trades = self.cerebro.broker.get_winning_trades()
-        win_trades = [trade.history[0].event.pnlcomm for trade in win_trades if trade.isclosed]
+        win_trades = [
+            trade.history[0].event.pnlcomm for trade in win_trades if trade.isclosed
+        ]
         lose_trades = self.cerebro.broker.get_losing_trades()
-        lose_trades = [trade.history[0].event.pnlcomm for trade in lose_trades if trade.isclosed]
-        return (sum(win_trades) / len(win_trades) - sum(lose_trades) / len(lose_trades)) / np.std(win_trades + lose_trades)
+        lose_trades = [
+            trade.history[0].event.pnlcomm for trade in lose_trades if trade.isclosed
+        ]
+        return (
+            sum(win_trades) / len(win_trades) - sum(lose_trades) / len(lose_trades)
+        ) / np.std(win_trades + lose_trades)
 
     def get_max_drawdown(self):
         """
@@ -601,7 +637,6 @@ class Backtest:
         profits = [trade.history[0].event.pnlcomm for trade in trades if trade.isclosed]
         return sum(profits) / len(profits)
 
-
     def get_trade_won_count(self):
         """
         The get_trade_won_count function returns the number of trades that have been closed and won.
@@ -615,7 +650,11 @@ class Backtest:
 
         """
         trades = self.cerebro.broker.get_trades()
-        won_trades = [trade for trade in trades if trade.isclosed and trade.history[0].event.pnl > 0]
+        won_trades = [
+            trade
+            for trade in trades
+            if trade.isclosed and trade.history[0].event.pnl > 0
+        ]
         return len(won_trades)
 
     def get_trade_lost_count(self):
@@ -630,7 +669,11 @@ class Backtest:
 
         """
         trades = self.cerebro.broker.get_trades()
-        lost_trades = [trade for trade in trades if trade.isclosed and trade.history[0].event.pnl < 0]
+        lost_trades = [
+            trade
+            for trade in trades
+            if trade.isclosed and trade.history[0].event.pnl < 0
+        ]
         return len(lost_trades)
 
     def get_trade_closed_count(self):
@@ -662,32 +705,32 @@ import backtrader as bt
 class BuySellStrategy(bt.Strategy):
     params = SimpleNamespace(
         **dict(
-        trading_rules=dict(
-            buy_time=59,
-            buy_stop_loss_pct=0.002,
-            buy_take_profit_pct=0.01,
-            buy_take_profit_pct2=0.02,
-            buy_green_candle_pct=0.003,
-            buy_red_candle_pct=0.002,
-            buy_wick_pct=0.002,
-            buy_lot_pct=0.002,
-            buy_ma_period_1=25,
-            buy_ma_period_2=89,
-            buy_ma_range_min_pct=0.002,
-            buy_ma_range_max_pct=0.005,
-            sell_ma_period_1=25,
-            sell_ma_period_2=89,
-            sell_limit_interval_pct=0.003,
-            sell_stop_loss_pct=0.002,
-            sell_take_profit_pct=0.01,
-            sell_stop_protect_time=5,
-            max_stop_protect_tries=3,
-            max_stop_protect_time=15,
-            stop_trading_above_ma_range_pct=0.002,
-            flip_to_sell_ma_widen_pct=0.003,
+            trading_rules=dict(
+                buy_time=59,
+                buy_stop_loss_pct=0.002,
+                buy_take_profit_pct=0.01,
+                buy_take_profit_pct2=0.02,
+                buy_green_candle_pct=0.003,
+                buy_red_candle_pct=0.002,
+                buy_wick_pct=0.002,
+                buy_lot_pct=0.002,
+                buy_ma_period_1=25,
+                buy_ma_period_2=89,
+                buy_ma_range_min_pct=0.002,
+                buy_ma_range_max_pct=0.005,
+                sell_ma_period_1=25,
+                sell_ma_period_2=89,
+                sell_limit_interval_pct=0.003,
+                sell_stop_loss_pct=0.002,
+                sell_take_profit_pct=0.01,
+                sell_stop_protect_time=5,
+                max_stop_protect_tries=3,
+                max_stop_protect_time=15,
+                stop_trading_above_ma_range_pct=0.002,
+                flip_to_sell_ma_widen_pct=0.003,
+            )
         )
     )
- )
 
     def __init__(self):
         self.buy_and_hold_returns = None
@@ -716,23 +759,32 @@ class BuySellStrategy(bt.Strategy):
                 self.buy(
                     exectype=bt.Order.Limit,
                     price=self.buy_limit_price,
-                    size=calculate_quantity(self.datas[0], self.params.trading_rules.buy_lot_size_pct)
+                    size=calculate_quantity(
+                        self.datas[0], self.params.trading_rules.buy_lot_size_pct
+                    ),
                 )
             elif self.position:
                 # Check if the stop loss price has not been set
                 if not self.stop_loss_price:
                     # Set stop loss price
-                    self.stop_loss_price = self.data.close * (1 - self.params.trading_rules.buy_stop_loss_pct)
+                    self.stop_loss_price = self.data.close * (
+                        1 - self.params.trading_rules.buy_stop_loss_pct
+                    )
                     self.sell(exectype=bt.Order.Stop, price=self.stop_loss_price)
 
                 # Check if the take profit price has not been set
                 if not self.take_profit_price:
                     # Set take profit price
-                    self.take_profit_price = self.data.close * (1 + self.params.trading_rules.buy_take_profit_pct)
+                    self.take_profit_price = self.data.close * (
+                        1 + self.params.trading_rules.buy_take_profit_pct
+                    )
                     self.sell(exectype=bt.Order.Limit, price=self.take_profit_price)
 
                     # Check if stop loss or take profit has been triggered
-                if self.position.size > 0 and (self.data.close <= self.stop_loss_price or self.data.close >= self.take_profit_price):
+                if self.position.size > 0 and (
+                    self.data.close <= self.stop_loss_price
+                    or self.data.close >= self.take_profit_price
+                ):
                     self.close()
 
                     self._extracted_from_next_36()
@@ -748,7 +800,9 @@ class BuySellStrategy(bt.Strategy):
                 self.buy_signal_triggered = True
 
                 # Calculate buy limit price
-                self.buy_limit_price = self.data.close[0] * (1 - self.params.trading_rules.buy_limit_price_pct)
+                self.buy_limit_price = self.data.close[0] * (
+                    1 - self.params.trading_rules.buy_limit_price_pct
+                )
 
         elif self.data.close[0] > self.buy_ma:
             self._extracted_from_next_36()
@@ -758,12 +812,22 @@ class BuySellStrategy(bt.Strategy):
                 # If yes, check if it has hit stop loss or take profit
                 if self.sell_order.status == Order.Status.FILLED:
                     self.sell_order = None
-                elif self.sell_order.stop_price is not None and self.data.close[0] < self.sell_order.stop_price:
+                elif (
+                    self.sell_order.stop_price is not None
+                    and self.data.close[0] < self.sell_order.stop_price
+                ):
                     self.close_sell_order()
-                    self.log(f'Sell order {self.sell_order.id} hit stop loss at {self.sell_order.stop_price}')
-                elif self.sell_order.limit_price is not None and self.data.close[0] >= self.sell_order.limit_price:
+                    self.log(
+                        f"Sell order {self.sell_order.id} hit stop loss at {self.sell_order.stop_price}"
+                    )
+                elif (
+                    self.sell_order.limit_price is not None
+                    and self.data.close[0] >= self.sell_order.limit_price
+                ):
                     self.close_sell_order()
-                    self.log(f'Sell order {self.sell_order.id} hit take  self.submit_sell_order()profit at {self.sell_order.limit_price}')
+                    self.log(
+                        f"Sell order {self.sell_order.id} hit take  self.submit_sell_order()profit at {self.sell_order.limit_price}"
+                    )
             elif self.should_submit_sell_order:
                 self.submit_sell_order()
 
@@ -776,18 +840,27 @@ class BuySellStrategy(bt.Strategy):
         self.take_profit_price = 0
 
     def submit_sell_order(self):
-
         """
         Submit a sell order
         """
-        self.sell_order = self.sell(exectype=bt.Order.StopLimit,
-                                    price=self.data.close[0] * (1 + self.params.trading_rules.sell_limit_interval_pct),
-                                    plimit=self.data.close[0] * (1 + self.params.trading_rules.sell_take_profit_pct),
-                                    stopprice=self.data.close[0] * (1 - self.params.trading_rules.sell_stop_loss_pct),
-                                    valid=self.data.datetime.datetime(0) + datetime.timedelta(minutes=self.params.trading_rules.sell_stop_protect_time),
-                                    transmit=False)
+        self.sell_order = self.sell(
+            exectype=bt.Order.StopLimit,
+            price=self.data.close[0]
+            * (1 + self.params.trading_rules.sell_limit_interval_pct),
+            plimit=self.data.close[0]
+            * (1 + self.params.trading_rules.sell_take_profit_pct),
+            stopprice=self.data.close[0]
+            * (1 - self.params.trading_rules.sell_stop_loss_pct),
+            valid=self.data.datetime.datetime(0)
+            + datetime.timedelta(
+                minutes=self.params.trading_rules.sell_stop_protect_time
+            ),
+            transmit=False,
+        )
 
-        self.log(f'Submitted sell order {self.sell_order.id} at {self.sell_order.created.price}')
+        self.log(
+            f"Submitted sell order {self.sell_order.id} at {self.sell_order.created.price}"
+        )
 
     def close_sell_order(self):
         """
@@ -795,14 +868,16 @@ class BuySellStrategy(bt.Strategy):
         """
         self.sell_order.close()
         self.sell_order = None
-        self.log(f'Closed sell order {self.sell_order.id}')
+        self.log(f"Closed sell order {self.sell_order.id}")
 
     @property
     def should_submit_sell_order(self):
         """
         Check if we should submit a sell order
         """
-        return self.sell_order is None and self.sell_ma < self.data.close[0] < self.sell_ma * (1 + self.params.trading_rules.flip_to_sell_ma_widen_pct)
+        return self.sell_order is None and self.sell_ma < self.data.close[
+            0
+        ] < self.sell_ma * (1 + self.params.trading_rules.flip_to_sell_ma_widen_pct)
 
     def notify_order(self, order):
         """
@@ -815,12 +890,16 @@ class BuySellStrategy(bt.Strategy):
 
         if order.status == order.Completed:
             if order.isbuy():
-                self.log(f'BUY EXECUTED, Price: {order.executed.price}, Cost: {order.executed.value}, Comm: {order.executed.comm}')
+                self.log(
+                    f"BUY EXECUTED, Price: {order.executed.price}, Cost: {order.executed.value}, Comm: {order.executed.comm}"
+                )
             elif order.issell():
-                self.log(f'SELL EXECUTED, Price: {order.executed.price}, Cost: {order.executed.value}, Comm: {order.executed.comm}')
+                self.log(
+                    f"SELL EXECUTED, Price: {order.executed.price}, Cost: {order.executed.value}, Comm: {order.executed.comm}"
+                )
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log('Order Canceled/Margin/Rejected')
+            self.log("Order Canceled/Margin/Rejected")
 
         self.order = None
 
@@ -833,14 +912,15 @@ class BuySellStrategy(bt.Strategy):
         if not trade.isclosed:
             return
 
-        self.log(f'OPERATION PROFIT, GROSS {trade.pnl}, NET {trade.pnlcomm}')
+        self.log(f"OPERATION PROFIT, GROSS {trade.pnl}, NET {trade.pnlcomm}")
 
     def stop(self):
-
         """
         Called when the strategy is closed
         """
-        self.log(f'(MA Period {self.params.buy_ma_period_1}) Ending Value {self.broker.getvalue()}')
+        self.log(
+            f"(MA Period {self.params.buy_ma_period_1}) Ending Value {self.broker.getvalue()}"
+        )
 
         # Save the final portfolio value for later inspection
         self.final_portfolio_value = self.broker.getvalue()
@@ -849,17 +929,21 @@ class BuySellStrategy(bt.Strategy):
         self.returns = self.final_portfolio_value - self.initial_portfolio_value
 
         # Calculate the buy and hold return
-        self.buy_and_hold_returns = self.data.close[0] - self.data.close[self.params.maperiod]
+        self.buy_and_hold_returns = (
+            self.data.close[0] - self.data.close[self.params.maperiod]
+        )
 
         # Calculate the strategy vs buy and hold return
         self.strategy_vs_buy_and_hold_returns = self.returns - self.buy_and_hold_returns
 
         # Print the results
-        print(f'Parameters: {self.params}')
-        print(f'Final Portfolio Value: {self.final_portfolio_value:2f}')
-        print(f'Returns: {self.returns:2f}')
-        print(f'Buy and Hold Returns: {self.buy_and_hold_returns:2f}')
-        print(f'Strategy vs Buy and Hold Returns: {self.strategy_vs_buy_and_hold_returns:2f}')
+        print(f"Parameters: {self.params}")
+        print(f"Final Portfolio Value: {self.final_portfolio_value:2f}")
+        print(f"Returns: {self.returns:2f}")
+        print(f"Buy and Hold Returns: {self.buy_and_hold_returns:2f}")
+        print(
+            f"Strategy vs Buy and Hold Returns: {self.strategy_vs_buy_and_hold_returns:2f}"
+        )
 
         # Plot the results
         self.plot_results()
@@ -869,7 +953,9 @@ class BuySellStrategy(bt.Strategy):
         Plot the results
         """
         # Get the buy and hold returns
-        buy_and_hold_returns = self.data.close[0] - self.data.close[self.params.maperiod]
+        buy_and_hold_returns = (
+            self.data.close[0] - self.data.close[self.params.maperiod]
+        )
 
         # Get the strategy vs buy and hold returns
         strategy_vs_buy_and_hold_returns = self.returns - buy_and_hold_returns
@@ -879,13 +965,16 @@ class BuySellStrategy(bt.Strategy):
         ax = fig.add_subplot(111)
 
         # Plot the equity curve
-        ax.plot(self.equity_curve, label='Equity Curve')
+        ax.plot(self.equity_curve, label="Equity Curve")
 
         # Plot the buy and hold equity curve
-        ax.plot(self.buy_and_hold_equity_curve, label='Buy and Hold Equity Curve')
+        ax.plot(self.buy_and_hold_equity_curve, label="Buy and Hold Equity Curve")
 
         # Plot the buy and hold equity curve
-        ax.plot(self.strategy_vs_buy_and_hold_equity_curve, label='Strategy vs Buy and Hold Equity Curve')
+        ax.plot(
+            self.strategy_vs_buy_and_hold_equity_curve,
+            label="Strategy vs Buy and Hold Equity Curve",
+        )
 
         # Plot the legend
         ax.legend()
@@ -893,7 +982,8 @@ class BuySellStrategy(bt.Strategy):
         # Plot the title
 
         ax.set_title(
-            f'MA Period: {self.params.maperiod} | Final Portfolio Value: {self.final_portfolio_value:2f} | Returns: {self.returns:2f} | Buy and Hold Returns: {buy_and_hold_returns:2f} | Strategy vs Buy and Hold Returns: {strategy_vs_buy_and_hold_returns:2f}')
+            f"MA Period: {self.params.maperiod} | Final Portfolio Value: {self.final_portfolio_value:2f} | Returns: {self.returns:2f} | Buy and Hold Returns: {buy_and_hold_returns:2f} | Strategy vs Buy and Hold Returns: {strategy_vs_buy_and_hold_returns:2f}"
+        )
 
         # Show the plot
         plt.show()
@@ -903,7 +993,7 @@ class BuySellStrategy(bt.Strategy):
         Logging function for the strategy
         """
         dt = dt or self.datas[0].datetime.datetime(0)
-        print(f'{dt.isoformat()} {txt}')
+        print(f"{dt.isoformat()} {txt}")
 
     def get_analysis(self):
         """
@@ -911,7 +1001,7 @@ class BuySellStrategy(bt.Strategy):
         """
         return dict(
             buy_and_hold_returns=self.buy_and_hold_returns,
-            strategy_vs_buy_and_hold_returns=self.strategy_vs_buy_and_hold_returns
+            strategy_vs_buy_and_hold_returns=self.strategy_vs_buy_and_hold_returns,
         )
 
     def get_analysis_df(self):
@@ -921,11 +1011,13 @@ class BuySellStrategy(bt.Strategy):
         return pd.DataFrame(self.get_analysis(), index=[0])
 
     def get_analysis_df_with_parameters(self):
-
         """
         Return the buy and hold returns and strategy vs buy and hold returns as a dataframe with the strategy parameters
         """
-        return pd.concat([pd.DataFrame(self.params.__dict__, index=[0]), self.get_analysis_df()], axis=1)
+        return pd.concat(
+            [pd.DataFrame(self.params.__dict__, index=[0]), self.get_analysis_df()],
+            axis=1,
+        )
 
     def get_parameters(self):
         """

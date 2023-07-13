@@ -65,8 +65,9 @@ class TradeType:
     """
     The TradeType class is used to represent the type of trade.
     """
-    BUY = 'buy'
-    SELL = 'sell'
+
+    BUY = "buy"
+    SELL = "sell"
 
 
 class TradingRule:
@@ -84,7 +85,9 @@ class Signal:
     The Signal class is used to represent a trading signal.
     """
 
-    def __init__(self, action: str, quantity: float, stop_loss: float, take_profit: float):
+    def __init__(
+        self, action: str, quantity: float, stop_loss: float, take_profit: float
+    ):
         self.action = action
         self.quantity = quantity
         self.stop_loss = stop_loss
@@ -96,7 +99,9 @@ class TradingLogic:
     The TradingLogic class is used to represent the trading logic.
     """
 
-    def __init__(self, position_size: float, stop_loss_pct: float, take_profit_pct: float):
+    def __init__(
+        self, position_size: float, stop_loss_pct: float, take_profit_pct: float
+    ):
         """
         The __init__ function is called when the class is instantiated.
         It sets up the initial state of an object, and defines what information needs to be provided when creating one.
@@ -124,7 +129,9 @@ class TradingLogic:
         self.stop_loss_pct = stop_loss_pct
         self.take_profit_pct = take_profit_pct
 
-    def calculate_signal(self, buy_condition: bool, sell_condition: bool, current_position: float) -> Signal:
+    def calculate_signal(
+        self, buy_condition: bool, sell_condition: bool, current_position: float
+    ) -> Signal:
         """
         The calculate_signal function is the main function of this strategy. It takes in a boolean buy_condition,
         a boolean sell_condition, and a float current_position. The function returns either None or an instance of Signal
@@ -144,14 +151,29 @@ class TradingLogic:
             quantity = self.calculate_quantity()
             stop_loss = self.calculate_stop_loss(buy=True)
             take_profit = self.calculate_take_profit(buy=True)
-            return Signal(action=TradeType.BUY, quantity=quantity, stop_loss=stop_loss, take_profit=take_profit)
+            return Signal(
+                action=TradeType.BUY,
+                quantity=quantity,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+            )
         elif sell_condition:
             quantity = self.calculate_quantity()
             stop_loss = self.calculate_stop_loss(buy=False)
             take_profit = self.calculate_take_profit(buy=False)
-            return Signal(action=TradeType.SELL, quantity=quantity, stop_loss=stop_loss, take_profit=take_profit)
+            return Signal(
+                action=TradeType.SELL,
+                quantity=quantity,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+            )
         elif current_position != 0 and self.should_close_position(current_position):
-            return Signal(action=TradeType.SELL, quantity=abs(current_position), stop_loss=None, take_profit=None)
+            return Signal(
+                action=TradeType.SELL,
+                quantity=abs(current_position),
+                stop_loss=None,
+                take_profit=None,
+            )
         else:
             return None
 
@@ -271,6 +293,7 @@ class Rule(BaseModel):
     """
     The Rule class is used to represent a rule in the rule engine.
     """
+
     name: str
     condition: str
     action: str
@@ -281,6 +304,7 @@ class RuleFilter:
     The RuleFilter class is used to filter the rules
      based on the condition and action.
     """
+
     def __init__(self, rules: List[Rule]):
         self.rules = rules
 
@@ -312,11 +336,14 @@ class RuleEngine:
     """
     The RuleEngine class is used to execute the rules.
     """
+
     def __init__(self, api: tradeapi.REST):
         self.rules = []
         self.api = api
 
-    def place_buy_order(self, symbol: str, qty: float, stop_loss: float, take_profit: float) -> Optional[entity.Order]:
+    def place_buy_order(
+        self, symbol: str, qty: float, stop_loss: float, take_profit: float
+    ) -> Optional[entity.Order]:
         """
         The place_buy_order function places a buy order for the given symbol, quantity, stop loss and take profit.
 
@@ -337,10 +364,10 @@ class RuleEngine:
             order = self.api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side='buy',
-                type='limit',
-                time_in_force='gtc',
-                limit_price=self.get_last_trade(symbol).price
+                side="buy",
+                type="limit",
+                time_in_force="gtc",
+                limit_price=self.get_last_trade(symbol).price,
             )
             self.calculate_take_profit(order.id, take_profit)
             self.calculate_stop_loss(order.id, stop_loss)
@@ -370,27 +397,35 @@ class RuleEngine:
 
         try:
             order = self.api.get_order_by_client_order_id(order_id)
-            if order and order.status == 'filled':
+            if order and order.status == "filled":
                 limit_price = order.filled_avg_price * (1 + take_profit)
                 self.submit_order(
                     order.symbol,
                     order.qty,
-                    'sell',
-                    'limit',
+                    "sell",
+                    "limit",
                     limit_price,
-                    f'{order.client_order_id}_tp',
+                    f"{order.client_order_id}_tp",
                 )
         except Exception as e:
             print(f"Failed to calculate take profit for order {order_id}: {e}")
 
-    def submit_order(self, symbol: str, qty: float, side: str, type: str, price: float, client_order_id: Optional[str] = None) -> Optional[tradeapi.entity.Order]:
+    def submit_order(
+        self,
+        symbol: str,
+        qty: float,
+        side: str,
+        type: str,
+        price: float,
+        client_order_id: Optional[str] = None,
+    ) -> Optional[tradeapi.entity.Order]:
         try:
             return self.api.submit_order(
                 symbol=symbol,
                 qty=qty,
                 side=side,
                 type=type,
-                time_in_force='gtc',
+                time_in_force="gtc",
                 limit_price=price,
                 client_order_id=client_order_id,
             )
@@ -418,15 +453,15 @@ class RuleEngine:
         """
         try:
             order = self.api.get_order_by_client_order_id(id)
-            if order and order.status == 'filled':
+            if order and order.status == "filled":
                 stop_price = order.filled_avg_price * (1 - stop_loss)
                 self.submit_order(
                     order.symbol,
                     order.qty,
-                    'sell',
-                    'stop',
+                    "sell",
+                    "stop",
                     stop_price,
-                    f'{order.client_order_id}_sl',
+                    f"{order.client_order_id}_sl",
                 )
         except Exception as e:
             print(f"Failed to calculate stop loss for order {id}: {e}")
@@ -491,16 +526,17 @@ def place_buy_order(api, param, qty):
         qty: str: Specify the quantity
     """
     api.submit_order(
-        symbol=param,
-        qty=qty,
-        side='buy',
-        type='market',
-        time_in_force='gtc'
+        symbol=param, qty=qty, side="buy", type="market", time_in_force="gtc"
     )
 
 
-def apply_rules(entry_rules: List[Rule], exit_rules: List[Rule], reverse_rules: List[Rule],
-                stock_data: List[StockData], positions: List[Position]) -> Tuple[List[Trade], List[Position]]:
+def apply_rules(
+    entry_rules: List[Rule],
+    exit_rules: List[Rule],
+    reverse_rules: List[Rule],
+    stock_data: List[StockData],
+    positions: List[Position],
+) -> Tuple[List[Trade], List[Position]]:
     """
     The apply_rules function takes in entry, exit and reverse rules, stock data and positions and applies the rules to the stock data.
     :param entry_rules:
@@ -510,7 +546,7 @@ def apply_rules(entry_rules: List[Rule], exit_rules: List[Rule], reverse_rules: 
     :param positions:
     """
     # Define conditions for the rules engine
-    conditions = {'stock_data': stock_data, 'positions': positions}
+    conditions = {"stock_data": stock_data, "positions": positions}
 
     # Create rules engine
     rule_engine = RuleEngine()
@@ -530,69 +566,108 @@ def apply_rules(entry_rules: List[Rule], exit_rules: List[Rule], reverse_rules: 
     # Apply rules
     trades = []
     for i, data in enumerate(stock_data):
-        conditions['i'] = i
+        conditions["i"] = i
         rule_engine.run(conditions)
 
         # Execute actions for entry rules
         if rule_engine.get_triggered_rules():
             for rule in rule_engine.get_triggered_rules():
                 if rule.name in [r.name for r in entry_rules]:
-                    actions = [a for r in entry_rules if r.name == rule.name for a in r.actions]
+                    actions = [
+                        a for r in entry_rules if r.name == rule.name for a in r.actions
+                    ]
                     for action in actions:
-                        if action == 'buy':
+                        if action == "buy":
                             qty = calculate_quantity(api, stock_data[i], positions)
                             order = place_buy_order(api, stock_data[i], qty)
-                            position = Position(symbol=stock_data[i].symbol, date=stock_data[i].date, qty=qty,
-                                                entry_price=stock_data[i].close, stop_loss=calculate_stop_loss(stock_data[i]),
-                                                take_profit=calculate_take_profit(stock_data[i]))
+                            position = Position(
+                                symbol=stock_data[i].symbol,
+                                date=stock_data[i].date,
+                                qty=qty,
+                                entry_price=stock_data[i].close,
+                                stop_loss=calculate_stop_loss(stock_data[i]),
+                                take_profit=calculate_take_profit(stock_data[i]),
+                            )
                             positions.append(position)
-                            trade = Trade(symbol=stock_data[i].symbol, date=stock_data[i].date, qty=qty,
-                                          price=stock_data[i].close, order_type='buy', order=order)
+                            trade = Trade(
+                                symbol=stock_data[i].symbol,
+                                date=stock_data[i].date,
+                                qty=qty,
+                                price=stock_data[i].close,
+                                order_type="buy",
+                                order=order,
+                            )
                             trades.append(trade)
 
         # Execute actions for exit rules
         for position in positions:
             if position.symbol == data.symbol:
-                conditions['position'] = position
+                conditions["position"] = position
                 rule_engine.run(conditions)
 
                 if rule_engine.get_triggered_rules():
                     for rule in rule_engine.get_triggered_rules():
                         if rule.name in [r.name for r in exit_rules]:
-                            actions = [a for r in exit_rules if r.name == rule.name for a in r.actions]
+                            actions = [
+                                a
+                                for r in exit_rules
+                                if r.name == rule.name
+                                for a in r.actions
+                            ]
                             for action in actions:
-                                if action == 'sell':
-                                    order = place_sell_order(api, stock_data[i], position.qty)
-                                    trade = Trade(symbol=stock_data[i].symbol, date=stock_data[i].date, qty=position.qty,
-                                                  price=stock_data[i].close, order_type='sell', order=order)
+                                if action == "sell":
+                                    order = place_sell_order(
+                                        api, stock_data[i], position.qty
+                                    )
+                                    trade = Trade(
+                                        symbol=stock_data[i].symbol,
+                                        date=stock_data[i].date,
+                                        qty=position.qty,
+                                        price=stock_data[i].close,
+                                        order_type="sell",
+                                        order=order,
+                                    )
                                     trades.append(trade)
                                     positions.remove(position)
 
     # Reverse positions based on reverse rules
     for position in positions:
-        conditions['position'] = position
+        conditions["position"] = position
         rule_engine.run(conditions)
 
         if rule_engine.get_triggered_rules():
             for rule in rule_engine.get_triggered_rules():
                 if rule.name in [r.name for r in reverse_rules]:
-                    actions = [a for r in reverse_rules if r.name == rule.name for a in r.actions]
+                    actions = [
+                        a
+                        for r in reverse_rules
+                        if r.name == rule.name
+                        for a in r.actions
+                    ]
                     for action in actions:
-                        if action == 'reverse':
+                        if action == "reverse":
                             close_position(api, position)
-                            qty = calculate_quantity(api.get_account().cash, stock_data.close)
+                            qty = calculate_quantity(
+                                api.get_account().cash, stock_data.close
+                            )
                             if qty > 0:
                                 if not (
-                                        entry_signal := apply_rules(
-                                            entry_rules, stock_data, position=None
-                                        )
+                                    entry_signal := apply_rules(
+                                        entry_rules, stock_data, position=None
+                                    )
                                 ):
                                     continue
-                                order = submit_order(api, 'buy', stock_data.symbol, qty, stock_data.close)
+                                order = submit_order(
+                                    api, "buy", stock_data.symbol, qty, stock_data.close
+                                )
                                 trade = Trade.from_order(order)
                                 current_position = Position.from_trade(trade)
-                                exit_signal = apply_rules(exit_rules, stock_data, current_position)
-                                reverse_signal = apply_rules(reverse_rules, stock_data, current_position)
+                                exit_signal = apply_rules(
+                                    exit_rules, stock_data, current_position
+                                )
+                                reverse_signal = apply_rules(
+                                    reverse_rules, stock_data, current_position
+                                )
                                 if exit_signal:
                                     close_position(api, current_position)
                                 elif reverse_signal:
@@ -604,24 +679,55 @@ def apply_rules(entry_rules: List[Rule], exit_rules: List[Rule], reverse_rules: 
 
 
 entry_rules = [
-    Rule(lambda data: data['bar_num'] % 60 == 59 and data['candle_color'] == 'red', 'buy'),
-    Rule(lambda data: data['wicks']['upper'] >= 0.2 and data['wicks']['upper'] < data['ma_25'] * 0.25, 'buy'),
-    Rule(lambda data: data['wicks']['upper'] >= 0.3 and data['wicks']['upper'] < data['ma_89'] * 0.25, 'buy'),
-    Rule(lambda data: data['candle_color'] == 'red' and data['ma_25'] > data['ma_50'], 'buy'),
-    Rule(lambda data: data['ma_25'] > data['ma_50'] and data['ma_50'] > data['ma_89'], 'buy'),
+    Rule(
+        lambda data: data["bar_num"] % 60 == 59 and data["candle_color"] == "red", "buy"
+    ),
+    Rule(
+        lambda data: data["wicks"]["upper"] >= 0.2
+        and data["wicks"]["upper"] < data["ma_25"] * 0.25,
+        "buy",
+    ),
+    Rule(
+        lambda data: data["wicks"]["upper"] >= 0.3
+        and data["wicks"]["upper"] < data["ma_89"] * 0.25,
+        "buy",
+    ),
+    Rule(
+        lambda data: data["candle_color"] == "red" and data["ma_25"] > data["ma_50"],
+        "buy",
+    ),
+    Rule(
+        lambda data: data["ma_25"] > data["ma_50"] and data["ma_50"] > data["ma_89"],
+        "buy",
+    ),
 ]
 
 # Define the exit rules
 exit_rules = [
-    Rule(lambda data: data['profit_loss'] >= 0.3 * data['buy_price'], 'sell'),
-    Rule(lambda data: data['bar_num'] % 60 == 0 and data['candle_color'] == 'green', 'sell'),
-    Rule(lambda data: data['candle_color'] == 'green' and data['wicks']['lower'] >= 0.3 and data['wicks']['lower'] < data['ma_25'] * 0.25, 'sell'),
+    Rule(lambda data: data["profit_loss"] >= 0.3 * data["buy_price"], "sell"),
+    Rule(
+        lambda data: data["bar_num"] % 60 == 0 and data["candle_color"] == "green",
+        "sell",
+    ),
+    Rule(
+        lambda data: data["candle_color"] == "green"
+        and data["wicks"]["lower"] >= 0.3
+        and data["wicks"]["lower"] < data["ma_25"] * 0.25,
+        "sell",
+    ),
 ]
 
 # Define the close/reverse rules
 reverse_rules = [
-    Rule(lambda data: data['ma_25'] < data['ma_50'] and data['ma_50'] < data['ma_89'], 'reverse'),
-    Rule(lambda data: data['ma_25'] < data['ma_50'] and data['profit_loss'] <= -0.2 * data['buy_price'], 'reverse'),
+    Rule(
+        lambda data: data["ma_25"] < data["ma_50"] and data["ma_50"] < data["ma_89"],
+        "reverse",
+    ),
+    Rule(
+        lambda data: data["ma_25"] < data["ma_50"]
+        and data["profit_loss"] <= -0.2 * data["buy_price"],
+        "reverse",
+    ),
 ]
 
 # Apply the rules to a stock data dictionary

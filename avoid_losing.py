@@ -1,7 +1,9 @@
 from typing import Dict
 
 
-def avoid_losing_scenarios(stats: Dict[str, float], thresholds: Dict[str, float]) -> bool:
+def avoid_losing_scenarios(
+    stats: Dict[str, float], thresholds: Dict[str, float]
+) -> bool:
     """
     Checks if the current trading scenario meets the specified thresholds to avoid losing trades.
 
@@ -10,14 +12,13 @@ def avoid_losing_scenarios(stats: Dict[str, float], thresholds: Dict[str, float]
     :return: A boolean indicating whether the current trading scenario meets the thresholds.
     """
     return not any(
-        key in stats and stats[key] < value
-        for key, value in thresholds.items()
+        key in stats and stats[key] < value for key, value in thresholds.items()
     )
 
 
 # Define the trading scenario statistics and thresholds
-stats = {'win_rate': 0.6, 'avg_profit': 100, 'max_drawdown': -200}
-thresholds = {'win_rate': 0.5, 'avg_profit': 50, 'max_drawdown': -500}
+stats = {"win_rate": 0.6, "avg_profit": 100, "max_drawdown": -200}
+thresholds = {"win_rate": 0.5, "avg_profit": 50, "max_drawdown": -500}
 
 # Check if the current scenario meets the thresholds to avoid losing trades
 if avoid_losing_scenarios(stats, thresholds):

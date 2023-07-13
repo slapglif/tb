@@ -3,7 +3,9 @@ from actors import StockDataActor, RuleActor
 from models import StockData, Rule
 
 
-def scan_market(stocks: List[str], stock_data_actors: List[StockDataActor], rule_actor: RuleActor) -> List[str]:
+def scan_market(
+    stocks: List[str], stock_data_actors: List[StockDataActor], rule_actor: RuleActor
+) -> List[str]:
     """
     Scans the market and selects symbols to trade based on the filter criteria.
 

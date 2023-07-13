@@ -13,64 +13,64 @@ import param
 
 
 # Example function to submit an order
-def submit_order(api, symbol, qty, side, order_type, time_in_force, limit_price=None, stop_price=None):
-    if order_type == 'limit':
-        if side == 'buy':
+def submit_order(
+    api, symbol, qty, side, order_type, time_in_force, limit_price=None, stop_price=None
+):
+    if order_type == "limit":
+        if side == "buy":
             api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side='buy',
-                type='limit',
+                side="buy",
+                type="limit",
                 time_in_force=time_in_force,
-                limit_price=limit_price
+                limit_price=limit_price,
             )
-        elif side == 'sell':
+        elif side == "sell":
             api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side='sell',
-                type='limit',
+                side="sell",
+                type="limit",
                 time_in_force=time_in_force,
-                limit_price=limit_price
+                limit_price=limit_price,
             )
-    elif order_type == 'stop':
-        if side == 'buy':
+    elif order_type == "stop":
+        if side == "buy":
             api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side='buy',
-                type='stop',
+                side="buy",
+                type="stop",
                 time_in_force=time_in_force,
-                stop_price=stop_price
+                stop_price=stop_price,
             )
-        elif side == 'sell':
+        elif side == "sell":
             api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side='sell',
-                type='stop',
+                side="sell",
+                type="stop",
                 time_in_force=time_in_force,
-                stop_price=stop_price
+                stop_price=stop_price,
             )
 
-    elif order_type == 'market':
-        if side == 'buy':
-
+    elif order_type == "market":
+        if side == "buy":
             api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side='buy',
-                type='market',
-                time_in_force=time_in_force
+                side="buy",
+                type="market",
+                time_in_force=time_in_force,
             )
-        elif side == 'sell':
-
+        elif side == "sell":
             api.submit_order(
                 symbol=symbol,
                 qty=qty,
-                side='sell',
-                type='market',
-                time_in_force=time_in_force
+                side="sell",
+                type="market",
+                time_in_force=time_in_force,
             )
 
 
@@ -93,13 +93,17 @@ def apply_reverse_rule(rule, stock_data):
 def amount_to_trade(api, quantity, param):
     amount = api.get_account().equity * param
     for x in param:
-
         amount = amount / x
         return min(amount, quantity)
 
 
-
-def trade_stocks(api: AlpacaAPI, filtered_stocks: List[str], entry_rules: List[Dict], exit_rules: List[Dict], reverse_rules: List[Dict]):
+def trade_stocks(
+    api: AlpacaAPI,
+    filtered_stocks: List[str],
+    entry_rules: List[Dict],
+    exit_rules: List[Dict],
+    reverse_rules: List[Dict],
+):
     """
     Executes trades based on the logic defined in the other functions and customizable rules.
     """
@@ -139,47 +143,57 @@ def trade_stocks(api: AlpacaAPI, filtered_stocks: List[str], entry_rules: List[D
                 position = None
 
             # Close position and reverse it
-            if 'close_and_reverse' in signal:
+            if "close_and_reverse" in signal:
                 if position:
                     close_and_reverse(api, position)
 
             # Open a new position
-            elif 'entry' in signal:
+            elif "entry" in signal:
                 if not position:
-                    quantity = calculate_quantity(api, stock, signal['stop_loss']['stop_price'], signal['risk'])
-                    amount = amount_to_trade(api, quantity, signal['entry_price'])
+                    quantity = calculate_quantity(
+                        api, stock, signal["stop_loss"]["stop_price"], signal["risk"]
+                    )
+                    amount = amount_to_trade(api, quantity, signal["entry_price"])
                     try:
                         order = api.submit_order(
                             symbol=stock,
                             qty=quantity,
-                            side=signal['side'],
-                            type='limit',
-                            time_in_force='gtc',
-                            order_class='bracket',
-                            stop_loss={'stop_price': signal['stop_loss']['stop_price']},
-                            take_profit={'limit_price': signal['take_profit']['limit_price']},
-                            limit_price=signal['entry_price'],
-                            notional=amount
+                            side=signal["side"],
+                            type="limit",
+                            time_in_force="gtc",
+                            order_class="bracket",
+                            stop_loss={"stop_price": signal["stop_loss"]["stop_price"]},
+                            take_profit={
+                                "limit_price": signal["take_profit"]["limit_price"]
+                            },
+                            limit_price=signal["entry_price"],
+                            notional=amount,
                         )
-                        print(f"New position opened for {stock}: {signal['side']} {quantity} shares")
+                        print(
+                            f"New position opened for {stock}: {signal['side']} {quantity} shares"
+                        )
                     except APIError as e:
                         print(f"Failed to open new position for {stock}: {e}")
 
             # Close an existing position
-            elif 'exit' in signal:
+            elif "exit" in signal:
                 if position:
                     try:
                         api.submit_order(
                             symbol=stock,
                             qty=position.qty,
-                            side=signal['side'],
-                            type='limit',
-                            time_in_force='gtc',
-                            order_class='bracket',
-                            stop_loss={'stop_price': signal['stop_loss']['stop_price']},
-                            take_profit={'limit_price': signal['take_profit']['limit_price']},
-                            limit_price=signal['limit_price']
+                            side=signal["side"],
+                            type="limit",
+                            time_in_force="gtc",
+                            order_class="bracket",
+                            stop_loss={"stop_price": signal["stop_loss"]["stop_price"]},
+                            take_profit={
+                                "limit_price": signal["take_profit"]["limit_price"]
+                            },
+                            limit_price=signal["limit_price"],
                         )
-                        print(f"Position closed for {stock}: {signal['side']} {position.qty} shares")
+                        print(
+                            f"Position closed for {stock}: {signal['side']} {position.qty} shares"
+                        )
                     except APIError as e:
                         print(f"Failed to close position for {stock}: {e}")

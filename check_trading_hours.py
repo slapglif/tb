@@ -2,7 +2,9 @@ from typing import Tuple
 import datetime
 
 
-def check_trading_hours(current_time: datetime.datetime, trading_hours: Tuple[str, str]) -> bool:
+def check_trading_hours(
+    current_time: datetime.datetime, trading_hours: Tuple[str, str]
+) -> bool:
     """
     Checks if the current time is within the specified trading hours.
 

@@ -22,7 +22,14 @@ from rules import RuleEngine
 
 
 class TradeActor(Actor):
-    def __init__(self, api_key: str, api_secret: str, base_url: str, symbol: str, rule_engine: RuleEngine):
+    def __init__(
+        self,
+        api_key: str,
+        api_secret: str,
+        base_url: str,
+        symbol: str,
+        rule_engine: RuleEngine,
+    ):
         super().__init__()
         self.api = tradeapi.REST(api_key, api_secret, base_url=base_url)
         self.symbol = symbol
@@ -30,7 +37,7 @@ class TradeActor(Actor):
 
     def perform_action(self):
         # Fetch stock data from Alpaca API
-        barset = self.api.get_barset(self.symbol, 'minute', limit=1)
+        barset = self.api.get_barset(self.symbol, "minute", limit=1)
         stock_data = barset[self.symbol][0]
 
         # Calculate trade signal based on rules
@@ -40,10 +47,12 @@ class TradeActor(Actor):
         position = self.api.get_position(self.symbol)
         if position:
             position_qty = int(position.qty)
-            if trade_signal == 'sell':
+            if trade_signal == "sell":
                 # Close the position if the signal is to sell
-                self.api.submit_order(self.symbol, position_qty, 'sell', 'market', 'day')
-                self.log_trade(position_qty, 'sell', stock_data)
+                self.api.submit_order(
+                    self.symbol, position_qty, "sell", "market", "day"
+                )
+                self.log_trade(position_qty, "sell", stock_data)
             elif self.rule_engine.should_reverse_position(position, stock_data):
                 # Reverse the position if the rule engine says to do so
                 self.reverse_position(position_qty, position, stock_data)
@@ -51,15 +60,22 @@ class TradeActor(Actor):
                 # Close the position if the rule engine says to do so
                 self.close_position(position_qty, position, stock_data)
         else:
-            if trade_signal == 'buy':
+            if trade_signal == "buy":
                 # Calculate the quantity to buy based on risk management rules
                 qty = self.rule_engine.calculate_quantity(self.api, stock_data)
 
                 # Submit a buy order if the signal is to buy
-                self.api.submit_order(self.symbol, qty, 'buy', 'limit', 'day', stock_data.close,
-                                       self.rule_engine.calculate_stop_loss(stock_data),
-                                       self.rule_engine.calculate_take_profit(stock_data))
-                self.log_trade(qty, 'buy', stock_data)
+                self.api.submit_order(
+                    self.symbol,
+                    qty,
+                    "buy",
+                    "limit",
+                    "day",
+                    stock_data.close,
+                    self.rule_engine.calculate_stop_loss(stock_data),
+                    self.rule_engine.calculate_take_profit(stock_data),
+                )
+                self.log_trade(qty, "buy", stock_data)
 
     def log_trade(self, qty: int, action: str, stock_data):
         # Create a Trade object and log it to the database
@@ -68,8 +84,8 @@ class TradeActor(Actor):
 
     def reverse_position(self, position_qty: int, position: Position, stock_data):
         # Close the current position
-        self.api.submit_order(self.symbol, position_qty, 'sell', 'market', 'day')
-        self.log_trade(position_qty, 'sell', stock_data)
+        self.api.submit_order(self.symbol, position_qty, "sell", "market", "day")
+        self.log_trade(position_qty, "sell", stock_data)
 
         # Wait for the order to fill
         time.sleep(2)
@@ -78,10 +94,17 @@ class TradeActor(Actor):
         qty = self.rule_engine.calculate_quantity(self.api, stock_data)
 
         # Submit a buy order to reverse the position
-        self.api.submit_order(self.symbol, qty, 'buy', 'limit', 'day', stock_data.close,
-                               TradingLogic.calculate_stop_loss(stock_data),
-                               self.rule_engine.calculate_take_profit(stock_data))
-        self.log_trade(qty, 'buy', stock_data)
+        self.api.submit_order(
+            self.symbol,
+            qty,
+            "buy",
+            "limit",
+            "day",
+            stock_data.close,
+            TradingLogic.calculate_stop_loss(stock_data),
+            self.rule_engine.calculate_take_profit(stock_data),
+        )
+        self.log_trade(qty, "buy", stock_data)
 
     def close_position(self, qty: int) -> Optional[Trade]:
         """Submit a sell order to close the position"""
@@ -93,11 +116,7 @@ class TradeActor(Actor):
 
         # Submit a sell order to close the position
         self.api.submit_order(
-            symbol=self.symbol,
-            qty=qty,
-            side='sell',
-            type='market',
-            time_in_force='day'
+            symbol=self.symbol, qty=qty, side="sell", type="market", time_in_force="day"
         )
 
         # Log the trade
@@ -108,7 +127,6 @@ class TradeActor(Actor):
         self.cash += trade.proceeds
 
         return trade
-
 
 
 class StockDataActor:
@@ -128,6 +146,7 @@ class StockDataActor:
     - timeframe: A string representing the timeframe for the stock data.
     - current_data: A pandas DataFrame containing the current stock data.
     """
+
     def __init__(self, api: tradeapi.REST, symbol: str, timeframe: str):
         self.api = api
         self.symbol = symbol
@@ -136,16 +155,26 @@ class StockDataActor:
 
     def get_data(self) -> pd.DataFrame:
         # Get the latest bar for the symbol
-        latest_bar = self.api.get_barset(self.symbol, self.timeframe, limit=1)[self.symbol][0]
+        latest_bar = self.api.get_barset(self.symbol, self.timeframe, limit=1)[
+            self.symbol
+        ][0]
         # Update the current data with the latest bar
         if self.current_data is None:
             self.current_data = pd.DataFrame([latest_bar._raw])
         else:
-            self.current_data = self.current_data.append([latest_bar._raw], ignore_index=True)
+            self.current_data = self.current_data.append(
+                [latest_bar._raw], ignore_index=True
+            )
         return self.current_data
 
+
 class RuleActor:
-    def __init__(self, api: tradeapi.REST, stock_data_actor: StockDataActor, rules: Dict[str, List]):
+    def __init__(
+        self,
+        api: tradeapi.REST,
+        stock_data_actor: StockDataActor,
+        rules: Dict[str, List],
+    ):
         self.api = api
         self.stock_data_actor = stock_data_actor
         self.rules = rules
@@ -156,26 +185,25 @@ class RuleActor:
             return False
 
         # Check entry rules
-        if 'entry' in self.rules:
-            entry_rules = self.rules['entry']
+        if "entry" in self.rules:
+            entry_rules = self.rules["entry"]
             for rule in entry_rules:
                 if not rule.check(data):
                     return False
 
         # Check exit rules
-        if 'exit' in self.rules:
-            exit_rules = self.rules['exit']
+        if "exit" in self.rules:
+            exit_rules = self.rules["exit"]
             for rule in exit_rules:
                 if rule.check(data):
                     return False
 
         # Check reverse rules
-        if 'reverse' in self.rules:
-            reverse_rules = self.rules['reverse']
+        if "reverse" in self.rules:
+            reverse_rules = self.rules["reverse"]
             for rule in reverse_rules:
                 if rule.check(data):
                     return True
 
         # No rules triggered
         return False
-

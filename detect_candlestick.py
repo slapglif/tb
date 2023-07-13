@@ -3,7 +3,9 @@ from typing import List
 import pandas as pd
 
 
-def detect_candlestick_wick(candlestick_data: pd.DataFrame, wick_pct_threshold: float, ma_period: int) -> List[str]:
+def detect_candlestick_wick(
+    candlestick_data: pd.DataFrame, wick_pct_threshold: float, ma_period: int
+) -> List[str]:
     """
     Analyzes the wick size of a candlestick to identify potential trade opportunities.
 
