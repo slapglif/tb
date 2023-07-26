@@ -23,4 +23,9 @@ thresholds = {"win_rate": 0.5, "avg_profit": 50, "max_drawdown": -500}
 # Check if the current scenario meets the thresholds to avoid losing trades
 if avoid_losing_scenarios(stats, thresholds):
     # Implement trading strategy for winning scenarios
-    pass
+    import traceback
+    stack = traceback.extract_stack(limit=2)
+    file_name, line_number, function_name, _ = stack[-2]
+    print("Function Name:", function_name)
+    print("Line Number:", line_number)
+    print("File Name:", file_name)

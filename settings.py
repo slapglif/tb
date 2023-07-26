@@ -13,3 +13,7 @@ class Config:
     alpaca_live_key = os.getenv("ALPACA_LIVE_KEY")
     alpaca_live_secret = os.getenv("ALPACA_LIVE_SECRET")
     alpaca_live_base_url = os.getenv("ALPACA_LIVE_BASE_URL")
+
+
+def settings():
+    return None

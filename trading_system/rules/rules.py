@@ -290,10 +290,6 @@ class Position:
 
 
 class Rule(BaseModel):
-    def __init__(__pydantic_self__, **data: Any):
-        super().__init__(data)
-        __pydantic_self__.actions = None
-
     """
     The Rule class is used to represent a rule in the rule engine.
     """
@@ -532,33 +528,6 @@ def place_buy_order(api, param, qty):
     api.submit_order(
         symbol=param, qty=qty, side="buy", type="market", time_in_force="gtc"
     )
-
-
-def calculate_stop_loss(param):
-    import traceback
-    stack = traceback.extract_stack(limit=2)
-    file_name, line_number, function_name, _ = stack[-2]
-    print("Function Name:", function_name)
-    print("Line Number:", line_number)
-    print("File Name:", file_name)
-
-
-def calculate_take_profit(param):
-    import traceback
-    stack = traceback.extract_stack(limit=2)
-    file_name, line_number, function_name, _ = stack[-2]
-    print("Function Name:", function_name)
-    print("Line Number:", line_number)
-    print("File Name:", file_name)
-
-
-def place_sell_order(api, param, qty):
-    import traceback
-    stack = traceback.extract_stack(limit=2)
-    file_name, line_number, function_name, _ = stack[-2]
-    print("Function Name:", function_name)
-    print("Line Number:", line_number)
-    print("File Name:", file_name)
 
 
 def apply_rules(
