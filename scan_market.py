@@ -39,10 +39,7 @@ def scan_market(
         if current_trade and current_trade.stock == stock:
             continue
 
-        # Apply the rules to the stock data using the RuleActor
-        is_candidate = rule_actor.apply_rules(data, rules)
-
-        if is_candidate:
+        if is_candidate := rule_actor.apply_rules(data, rules):
             trade_candidates.append(stock)
 
     return trade_candidates

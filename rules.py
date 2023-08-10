@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List, Optional
 
 from alpaca_trade_api import entity
 
@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from models import StockData
 from typing import List
 
+from trade import submit_order
+
 
 class Trade(BaseModel):
     symbol: str
@@ -17,6 +19,20 @@ class Trade(BaseModel):
     price: float
     time: str
 
+    @classmethod
+    def from_order(cls, order):
+        """
+        The from_order class method takes in an order object and returns a Trade object.
+        :param order:
+        :return:
+        """
+        return cls(
+            symbol=order.symbol,
+            side=order.side,
+            qty=int(order.qty),
+            price=float(order.filled_avg_price),
+            time=order.filled_at,
+        )
 
 # Example function to close a position
 def close_position(api, position):
@@ -332,10 +348,6 @@ class RuleFilter:
                 exec(rule.action)
 
 
-from typing import Optional
-import alpaca_trade_api as tradeapi
-
-
 class RuleEngine:
     """
     The RuleEngine class is used to execute the rules.
@@ -647,16 +659,13 @@ def apply_rules(
                             ]
                             for action in actions:
                                 if action == "sell":
-                                    order = place_sell_order(
-                                        api, stock_data[i], position.qty
+                                    place_sell_order(
+                                        ..., stock_data[i], position.qty
                                     )
                                     trade = Trade(
                                         symbol=stock_data[i].symbol,
-                                        date=stock_data[i].date,
                                         qty=position.qty,
                                         price=stock_data[i].close,
-                                        order_type="sell",
-                                        order=order,
                                     )
                                     trades.append(trade)
                                     positions.remove(position)

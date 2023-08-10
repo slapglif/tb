@@ -180,6 +180,10 @@ class RuleActor:
         self.rules = rules
 
     def check_rules(self) -> bool:
+        """
+
+        :return:
+        """
         data = self.stock_data_actor.get_data()
         if data.empty:
             return False
@@ -207,3 +211,12 @@ class RuleActor:
 
         # No rules triggered
         return False
+
+    def apply_rules(self, data, rules):
+        """
+        Apply a list of rules to a DataFrame and return True if any of the rules are triggered
+        :param data:
+        :param rules:
+        :return:
+        """
+        return any(rule.check(data) for rule in rules)
